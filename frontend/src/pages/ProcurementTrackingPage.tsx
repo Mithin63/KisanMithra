@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { CheckSquare, CheckCircle2, Clock, ShieldCheck, AlertCircle, FileText, Download } from 'lucide-react';
 import { localState } from '../services/api';
 import { ProcurementRecord } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export const ProcurementTrackingPage: React.FC = () => {
+  const { t } = useLanguage();
   const [procurement, setProcurement] = useState<ProcurementRecord | null>(null);
 
   useEffect(() => {
@@ -29,7 +31,7 @@ export const ProcurementTrackingPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 space-y-8 animate-fadeIn">
       
       {/* Page Header */}
       <div className="text-center space-y-2">
@@ -37,7 +39,7 @@ export const ProcurementTrackingPage: React.FC = () => {
           Procurement Lifecycle Tracker
         </span>
         <h1 className="text-3xl font-black text-slate-900">Crop Procurement Status</h1>
-        <p className="text-xs text-slate-500">Ministry of Consumer Affairs, Food & Public Distribution</p>
+        <p className="text-xs text-slate-500">{t('govt_title')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -58,21 +60,19 @@ export const ProcurementTrackingPage: React.FC = () => {
             {timelineStages.map((stage, idx) => (
               <div key={idx} className="relative flex items-start space-x-4">
                 <div
-                  className={`absolute -left-[25px] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center -ml-[25px] flex-shrink-0 text-xs font-bold ${
                     stage.status === 'completed'
-                      ? 'bg-emerald-600 text-white shadow ring-4 ring-emerald-100'
+                      ? 'bg-emerald-600 text-white'
                       : stage.status === 'active'
-                      ? 'bg-amber-500 text-slate-950 font-bold ring-4 ring-amber-100 animate-pulse'
-                      : 'bg-slate-200 text-slate-400'
+                      ? 'bg-amber-500 text-white ring-4 ring-amber-100 animate-pulse'
+                      : 'bg-slate-200 text-slate-500'
                   }`}
                 >
-                  {stage.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                  {stage.status === 'completed' ? '✓' : idx + 1}
                 </div>
 
-                <div className="space-y-0.5 pt-0.5">
-                  <h4 className={`text-sm font-bold ${stage.status === 'completed' ? 'text-slate-900' : stage.status === 'active' ? 'text-amber-700 font-extrabold' : 'text-slate-400'}`}>
-                    {stage.title}
-                  </h4>
+                <div className="space-y-0.5">
+                  <h4 className="font-bold text-slate-900 text-sm">{stage.title}</h4>
                   <p className="text-xs text-slate-500">{stage.time}</p>
                 </div>
               </div>
@@ -80,44 +80,49 @@ export const ProcurementTrackingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Verified Produce Receipt & Procurement Details */}
+        {/* Right Column: Accepted Batch Voucher Card */}
         <div className="space-y-6">
-          <div className="bg-slate-900 text-white rounded-3xl p-6 shadow-xl border border-slate-800 space-y-5">
-            <div className="flex items-center space-x-2 border-b border-slate-800 pb-3">
-              <FileText className="w-5 h-5 text-emerald-400" />
-              <h3 className="font-bold text-base">Verified Produce Voucher</h3>
+          <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-xl space-y-5 border border-slate-800">
+            <div className="flex justify-between items-start border-b border-slate-800 pb-3">
+              <div>
+                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Verified Batch</span>
+                <h3 className="font-black text-lg text-white">Batch #SP-GNT-127</h3>
+              </div>
+              <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                Accepted
+              </span>
             </div>
 
             <div className="space-y-3 text-xs">
               <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Crop Name:</span>
-                <span className="font-bold text-white">Paddy (Sona Masoori)</span>
+                <span className="text-slate-400">Crop Commodity</span>
+                <span className="font-bold text-slate-200">{procurement?.crop_name || 'Paddy (Grade A)'}</span>
               </div>
-
               <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Actual Quantity:</span>
-                <span className="font-bold text-emerald-400 text-sm">25.4 Quintals</span>
+                <span className="text-slate-400">Net Quantity</span>
+                <span className="font-bold text-slate-200">{procurement?.actual_quantity || '25.40'} Quintals</span>
               </div>
-
               <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Quality Grade:</span>
-                <span className="font-bold text-amber-300">Grade A (Moisture 12.5%)</span>
+                <span className="text-slate-400">Moisture Content</span>
+                <span className="font-bold text-emerald-400">{procurement?.moisture || '12.5'}% (Pass)</span>
               </div>
-
               <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">MSP Price / Quintal:</span>
-                <span className="font-bold text-white">₹2,369 / Q</span>
+                <span className="text-slate-400">Quality Assigned</span>
+                <span className="font-bold text-emerald-400">{procurement?.quality_grade || 'Grade A'}</span>
               </div>
-
-              <div className="bg-emerald-950/80 p-3 rounded-2xl border border-emerald-700/50 flex justify-between items-center text-sm font-black text-emerald-300">
-                <span>Total Amount:</span>
-                <span className="text-lg text-white">₹60,152.60</span>
+              <div className="flex justify-between py-1 border-b border-slate-800">
+                <span className="text-slate-400">Govt. MSP Price</span>
+                <span className="font-bold text-slate-200">₹2,369.00 / Qtl</span>
+              </div>
+              <div className="flex justify-between py-2 pt-3 text-sm">
+                <span className="font-bold text-white">Total Payout Amount</span>
+                <span className="font-black text-amber-400">₹{procurement?.total_amount ? procurement.total_amount.toLocaleString('en-IN') : '60,172.60'}</span>
               </div>
             </div>
 
             <button
-              onClick={() => alert('Procurement Receipt downloaded.')}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow text-xs flex items-center justify-center space-x-2"
+              type="button"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2 transition shadow"
             >
               <Download className="w-4 h-4" />
               <span>Download Official Receipt</span>
@@ -126,7 +131,8 @@ export const ProcurementTrackingPage: React.FC = () => {
         </div>
 
       </div>
-
     </div>
   );
 };
+
+export default ProcurementTrackingPage;

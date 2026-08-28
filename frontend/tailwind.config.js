@@ -5,6 +5,14 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
+    screens: {
+      'xs': '360px',   // Small phones (Samsung A-series, Redmi)
+      'sm': '480px',   // Large phones (iPhone 14, Pixel 7)
+      'md': '768px',   // Tablets (iPad Mini, Galaxy Tab)
+      'lg': '1024px',  // Laptops (MacBook Air 13", Surface)
+      'xl': '1280px',  // Desktops & large laptops
+      '2xl': '1536px', // Large desktop monitors
+    },
     extend: {
       colors: {
         agri: {
@@ -39,7 +47,16 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-      }
+      },
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+      fontSize: {
+        'xxs': ['0.625rem', { lineHeight: '0.875rem' }],
+      },
     },
   },
   plugins: [],

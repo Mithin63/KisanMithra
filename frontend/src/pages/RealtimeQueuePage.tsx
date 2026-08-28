@@ -3,9 +3,11 @@ import { Clock, Play, Pause, RefreshCw, Zap, ShieldCheck, CheckCircle2, UserChec
 import { localState } from '../services/api';
 import { QueueVisualizer } from '../components/QueueVisualizer';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export const RealtimeQueuePage: React.FC = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [nowServing, setNowServing] = useState(localState.nowServingToken);
   const [autoAdvance, setAutoAdvance] = useState(true);
 
@@ -42,37 +44,22 @@ export const RealtimeQueuePage: React.FC = () => {
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <span className="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">Live Procurement Queue</span>
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">{t('queue_tracker_title')}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black">Guntur Agricultural Procurement Centre</h1>
           <p className="text-xs text-slate-400">Active Counters: 5 • Operating Hours: 08:00 AM – 05:00 PM</p>
         </div>
 
-        {/* Live Simulation Controls */}
-        <div className="flex items-center space-x-3 bg-slate-800 p-2.5 rounded-2xl border border-slate-700">
-          <span className="text-xs font-semibold text-slate-300">Live Simulation:</span>
-          <button
-            onClick={() => setAutoAdvance(!autoAdvance)}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition ${
-              autoAdvance
-                ? 'bg-emerald-600 text-white animate-pulse'
-                : 'bg-slate-700 text-slate-300 hover:text-white'
-            }`}
-          >
-            {autoAdvance ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{autoAdvance ? 'Auto Tick (12s)' : 'Paused'}</span>
-          </button>
-
-          <button
-            onClick={() => localState.advanceQueue()}
-            className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-xs transition shadow"
-          >
-            +1 Step Now
-          </button>
+        {/* Live Counter Sync Badge */}
+        <div className="flex items-center space-x-3">
+          <div className="bg-slate-800/90 border border-slate-700 px-4 py-2 rounded-2xl flex items-center space-x-2 text-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="font-bold text-slate-200">Electronic Counter 1 Active</span>
+          </div>
         </div>
       </div>
 
-      {/* Main Interactive Queue Visualizer */}
+      {/* Main Visualizer */}
       <QueueVisualizer
         nowServing={nowServing}
         userToken={userToken}
@@ -80,37 +67,41 @@ export const RealtimeQueuePage: React.FC = () => {
         estimatedWaitMins={estimatedWaitMins}
       />
 
-      {/* Smart Waiting-Time Algorithm Explanation Card */}
-      <div className="bg-gradient-to-r from-emerald-50 via-white to-green-50 p-6 rounded-3xl border border-emerald-200 shadow-sm space-y-4">
-        <div className="flex items-center space-x-2">
-          <Zap className="w-5 h-5 text-amber-500" />
-          <h2 className="text-base font-bold text-slate-900">AI & Automated Queue Estimation Algorithm</h2>
+      {/* Queue Tips & Guidelines */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <h4 className="font-bold text-slate-900 text-sm">Gate Arrival Protocol</h4>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Arrive at the procurement gate 15 minutes before your scheduled slot. Show your digital token pass or QR code to the gate security.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1">
-            <span className="text-slate-400 font-semibold uppercase text-[10px] block">Formula</span>
-            <p className="font-mono text-emerald-800 font-bold text-xs">
-              estimated_wait = (farmers_ahead × avg_processing) / active_counters
-            </p>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+            <Zap className="w-5 h-5" />
           </div>
+          <h4 className="font-bold text-slate-900 text-sm">Automated Weighing</h4>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Vehicles proceed to electronic weighbridges. Net produce weight is calculated automatically and sent to the central portal.
+          </p>
+        </div>
 
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1">
-            <span className="text-slate-400 font-semibold uppercase text-[10px] block">Current Factors</span>
-            <p className="text-slate-700 font-medium">
-              13 farmers ahead × 4 mins / 5 counters = ~45 mins
-            </p>
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+          <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
+            <ShieldCheck className="w-5 h-5" />
           </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-1">
-            <span className="text-slate-400 font-semibold uppercase text-[10px] block">Smart Dispatch</span>
-            <p className="text-slate-700 font-medium">
-              Automatically alerts farmer via SMS when queue position &lt; 5.
-            </p>
-          </div>
+          <h4 className="font-bold text-slate-900 text-sm">Moisture & Quality Inspection</h4>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Authorized testing equipment measures grain moisture levels (Standard: below 14%). Grade A or Grade B is assigned.
+          </p>
         </div>
       </div>
 
     </div>
   );
 };
+
+export default RealtimeQueuePage;

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Play, FastForward, UserCheck, ShieldCheck, RefreshCw, Zap, BellRing } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { localState } from '../services/api';
 
 export const DemoBanner: React.FC = () => {
   const { role, switchRole, demoMode, toggleDemoMode } = useAuth();
+  const { t } = useLanguage();
   const [autoSimulating, setAutoSimulating] = useState(false);
 
   useEffect(() => {
@@ -25,9 +27,9 @@ export const DemoBanner: React.FC = () => {
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] animate-pulse">
             ⚡
           </span>
-          <span className="font-bold tracking-wide uppercase text-emerald-400">Hackathon Presentation Control Panel</span>
+          <span className="font-bold tracking-wide uppercase text-emerald-400">{t('presentation_panel')}</span>
           <span className="hidden sm:inline-block px-2 py-0.5 bg-emerald-900/60 text-emerald-300 rounded text-[10px] border border-emerald-700/50">
-            Live Interactive Simulation
+            {t('live_simulation')}
           </span>
         </div>
 
@@ -39,7 +41,7 @@ export const DemoBanner: React.FC = () => {
             title="Advances current queue token by 1"
           >
             <FastForward className="w-3.5 h-3.5" />
-            <span>Advance Queue (+1 Token)</span>
+            <span>{t('advance_queue')}</span>
           </button>
 
           <button
@@ -51,20 +53,20 @@ export const DemoBanner: React.FC = () => {
             }`}
           >
             {autoSimulating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{autoSimulating ? 'Auto Simulating (10s)' : 'Start Auto Simulation'}</span>
+            <span>{autoSimulating ? t('auto_simulating') : t('start_simulation')}</span>
           </button>
         </div>
 
         {/* Right: Quick Role Switcher */}
         <div className="flex items-center space-x-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-          <span className="text-[10px] text-slate-400 px-1 font-semibold">Switch View:</span>
+          <span className="text-[10px] text-slate-400 px-1 font-semibold">{t('switch_view')}:</span>
           <button
             onClick={() => switchRole('FARMER')}
             className={`px-2 py-0.5 rounded text-[11px] font-medium transition ${
               role === 'FARMER' ? 'bg-emerald-600 text-white font-bold shadow' : 'text-slate-300 hover:text-white'
             }`}
           >
-            Farmer
+            {t('tab_farmer')}
           </button>
           <button
             onClick={() => switchRole('OFFICER')}
@@ -72,7 +74,7 @@ export const DemoBanner: React.FC = () => {
               role === 'OFFICER' ? 'bg-blue-600 text-white font-bold shadow' : 'text-slate-300 hover:text-white'
             }`}
           >
-            Officer
+            {t('tab_officer')}
           </button>
           <button
             onClick={() => switchRole('ADMIN')}
@@ -80,7 +82,7 @@ export const DemoBanner: React.FC = () => {
               role === 'ADMIN' ? 'bg-amber-600 text-white font-bold shadow' : 'text-slate-300 hover:text-white'
             }`}
           >
-            Admin
+            {t('tab_admin')}
           </button>
         </div>
       </div>

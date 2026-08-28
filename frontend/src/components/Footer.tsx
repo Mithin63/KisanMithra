@@ -1,8 +1,11 @@
 import React from 'react';
 import { Wheat, PhoneCall, ShieldCheck, Mail, Globe, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Footer: React.FC = () => {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 pt-12 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -14,25 +17,25 @@ export const Footer: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white">
                 <Wheat className="w-5 h-5" />
               </div>
-              <span>SmartProcure</span>
+              <span>{t('portal_title')}</span>
             </div>
             <p className="text-slate-400 text-xs leading-relaxed">
-              An intelligent digital procurement management platform by the Ministry of Consumer Affairs, Food & Public Distribution to automate queue allocations, eliminate delays, and empower Indian farmers.
+              {t('tagline_desc')}
             </p>
             <p className="text-emerald-400 font-semibold text-xs italic">
-              "Smart Queues. Faster Procurement. Better Farming."
+              {t('tagline_main')}
             </p>
           </div>
 
           {/* Col 2: Quick Links */}
           <div>
-            <h4 className="text-white font-semibold mb-3 text-sm">Quick Services</h4>
+            <h4 className="text-white font-semibold mb-3 text-sm">{t('quick_actions')}</h4>
             <ul className="space-y-2">
-              <li><Link to="/farmer/book-slot" className="hover:text-emerald-400 transition">Digital Slot Booking</Link></li>
-              <li><Link to="/farmer/my-queue" className="hover:text-emerald-400 transition">Live Queue Tracker</Link></li>
-              <li><Link to="/farmer/procurement" className="hover:text-emerald-400 transition">Procurement Progress Status</Link></li>
-              <li><Link to="/farmer/payments" className="hover:text-emerald-400 transition">Direct Payment Tracker (DBT)</Link></li>
-              <li><Link to="/officer" className="hover:text-emerald-400 transition">Procurement Officer Portal</Link></li>
+              <li><Link to="/farmer/book-slot" className="hover:text-emerald-400 transition">{t('nav_book_slot')}</Link></li>
+              <li><Link to="/farmer/my-queue" className="hover:text-emerald-400 transition">{t('nav_my_queue')}</Link></li>
+              <li><Link to="/farmer/procurement" className="hover:text-emerald-400 transition">{t('nav_procurement')}</Link></li>
+              <li><Link to="/farmer/payments" className="hover:text-emerald-400 transition">{t('nav_payments')}</Link></li>
+              <li><Link to="/officer" className="hover:text-emerald-400 transition">{t('btn_officer_login')}</Link></li>
             </ul>
           </div>
 
@@ -49,8 +52,8 @@ export const Footer: React.FC = () => {
 
           {/* Col 4: Farmer Helpline & Contact */}
           <div className="space-y-3">
-            <h4 className="text-white font-semibold text-sm">Farmer Support Helpline</h4>
-            <div className="bg-slate-800 p-3.5 rounded-xl border border-slate-700 space-y-2">
+            <h4 className="text-white font-semibold text-sm">{t('toll_free')}</h4>
+            <Link to="/farmer/helpline" className="block bg-slate-800 hover:bg-slate-700/80 transition p-3.5 rounded-xl border border-slate-700 space-y-2">
               <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
                 <PhoneCall className="w-4 h-4" />
                 <span>1800-180-1551 (Toll-Free)</span>
@@ -58,7 +61,7 @@ export const Footer: React.FC = () => {
               <p className="text-[11px] text-slate-400">
                 National Kisan Call Centre (24x7 Support in 22 Official Languages)
               </p>
-            </div>
+            </Link>
             <div className="flex items-center space-x-2 text-slate-400 text-xs">
               <Mail className="w-4 h-4 text-emerald-500" />
               <span>support-smartprocure@gov.in</span>
@@ -68,14 +71,14 @@ export const Footer: React.FC = () => {
 
         {/* Bottom copyright */}
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-slate-500 text-[11px] space-y-3 sm:space-y-0">
-          <p>© 2026 SmartProcure. Designed & Developed for Ministry of Consumer Affairs, Food & Public Distribution, Govt. of India.</p>
+          <p>{t('footer_text')}</p>
           <div className="flex space-x-4">
-            <span className="hover:text-slate-300 cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-300 cursor-pointer">Terms of Service</span>
-            <span className="hover:text-slate-300 cursor-pointer">Accessibility Statement</span>
+            <span className="hover:text-slate-300 cursor-pointer">{t('footer_rights')}</span>
           </div>
         </div>
       </div>
     </footer>
   );
 };
+
+export default Footer;

@@ -1,0 +1,32 @@
+services:
+  # 🏢 Express Backend Web Service
+  - type: web
+    name: smartprocure-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: NODE_ENV
+        value: production
+
+  # 🌾 Vite/React Frontend Static Site
+  - type: static
+    name: smartprocure-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: smartprocure-backend
+          type: web
+          property: host
+    routes:
+      # Critical for Single Page Applications (React Router) to prevent 404 on refresh
+      - type: rewrite
+        source: /*
+        destination: /index.html

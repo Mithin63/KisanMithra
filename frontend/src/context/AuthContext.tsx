@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole } from '../types';
 import { localState } from '../services/api';
+import { logLoginEvent } from '../services/authLogger';
 
 interface AuthContextType {
   user: User | null;
@@ -15,8 +16,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Default to Farmer (Ravi Kumar) for smooth demonstration
-  const [user, setUser] = useState<User | null>(localState.users[0]);
+  // Default to null so user must log in first
+  const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('FARMER');
   const [demoMode, setDemoMode] = useState<boolean>(true);
 
@@ -45,12 +46,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const activeRole = overrideRole || found.role;
       setUser(found);
       setRole(activeRole);
+
+      // Persist login event to Supabase
+      logLoginEvent({
+        mobile: found.mobile,
+        email: found.email,
+        role: activeRole,
+        event_type: 'LOGIN',
+        status: 'SUCCESS',
+      });
+
       return true;
     }
+
+    // Persist failed login attempt to Supabase
+    logLoginEvent({
+      mobile,
+      role: overrideRole || 'FARMER',
+      event_type: 'LOGIN',
+      status: 'FAILED',
+      error_message: 'User not found in system',
+    });
+
     return false;
   };
 
   const logout = () => {
+    if (user) {
+      // Persist logout event to Supabase
+      logLoginEvent({
+        mobile: user.mobile,
+        email: user.email,
+        role,
+        event_type: 'LOGOUT',
+        status: 'SUCCESS',
+      });
+    }
     setUser(null);
   };
 
