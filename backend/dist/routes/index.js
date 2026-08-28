@@ -11,7 +11,9 @@ const paymentController_1 = require("../controllers/paymentController");
 const notificationController_1 = require("../controllers/notificationController");
 const adminController_1 = require("../controllers/adminController");
 const router = (0, express_1.Router)();
-// Auth Endpoints
+// Auth Endpoints (Real OTP Generation & Verification)
+router.post('/auth/send-otp', authController_1.sendOtp);
+router.post('/auth/verify-otp', authController_1.verifyOtp);
 router.post('/auth/register', authController_1.register);
 router.post('/auth/login', authController_1.login);
 // Farmer Profile

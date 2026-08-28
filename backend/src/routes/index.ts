@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { login, register } from '../controllers/authController';
+import { login, register, sendOtp, verifyOtp } from '../controllers/authController';
 import { getFarmerProfile, updateFarmerProfile } from '../controllers/farmerController';
 import { getAllCentres, getCentreById, getCentreAvailabilityAndRecommendation } from '../controllers/centreController';
 import { createBooking, getBookingById, getFarmerBookings } from '../controllers/bookingController';
@@ -11,7 +11,9 @@ import { getAdminStatistics, getAdminCentresList } from '../controllers/adminCon
 
 const router = Router();
 
-// Auth Endpoints
+// Auth Endpoints (Real OTP Generation & Verification)
+router.post('/auth/send-otp', sendOtp);
+router.post('/auth/verify-otp', verifyOtp);
 router.post('/auth/register', register);
 router.post('/auth/login', login);
 
