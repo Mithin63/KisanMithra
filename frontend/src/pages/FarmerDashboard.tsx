@@ -24,7 +24,11 @@ export const FarmerDashboard: React.FC = () => {
 
   useEffect(() => {
     const syncData = () => {
-      const bookings = localState.bookings;
+      if (!user) {
+        setActiveBooking(null);
+        return;
+      }
+      const bookings = localState.bookings.filter(b => b.farmer_id === user.farmer?.id);
       const active = bookings.find(b => b.status === 'WAITING' || b.status === 'ARRIVED' || b.status === 'IN_PROGRESS');
       if (active) {
         const ahead = Math.max(0, active.token_number - localState.nowServingToken);
@@ -34,15 +38,15 @@ export const FarmerDashboard: React.FC = () => {
           queue_position: ahead,
           estimated_wait_time: est
         });
-      } else if (bookings.length > 0) {
-        setActiveBooking(bookings[0]);
+      } else {
+        setActiveBooking(null);
       }
     };
 
     syncData();
     const unsubscribe = localState.subscribe(syncData);
     return unsubscribe;
-  }, []);
+  }, [user]);
 
   const farmerName = user?.name || 'Ravi Kumar';
   const farmerIdCode = user?.farmer?.farmer_id || 'AP-FARM-9872';
@@ -66,13 +70,22 @@ export const FarmerDashboard: React.FC = () => {
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight">
             {t('welcome_farmer')}, {farmerName}!
           </h1>
-          <p className="text-emerald-200 text-xs sm:text-sm flex items-center space-x-2">
+          <p className="text-emerald-200 text-xs sm:text-sm flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>Farmer ID: <strong>{farmerIdCode}</strong></span>
             <span>•</span>
             <span className="flex items-center space-x-1">
               <MapPin className="w-3.5 h-3.5 text-emerald-400" />
               <span>{farmerVillage}, {farmerDistrict}</span>
             </span>
+            {user?.name.startsWith('Farmer (') && (
+              <>
+                <span>•</span>
+                <Link to="/farmer/profile" className="text-amber-300 hover:text-amber-200 font-bold underline flex items-center space-x-1">
+                  <User className="w-3.5 h-3.5" />
+                  <span>Update Profile Name</span>
+                </Link>
+              </>
+            )}
           </p>
         </div>
 
@@ -181,17 +194,19 @@ export const FarmerDashboard: React.FC = () => {
       {/* 5. Quick Actions Grid */}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-slate-900">{t('quick_actions')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/farmer/digital-token"
-            className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition space-y-2 group"
-          >
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold group-hover:scale-110 transition">
-              <QrCode className="w-5 h-5" />
-            </div>
-            <h4 className="font-bold text-slate-900 text-sm">{t('btn_view_token')}</h4>
-            <p className="text-[11px] text-slate-500">Download digital gate pass with QR code verification.</p>
-          </Link>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${activeBooking ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
+          {activeBooking && (
+            <Link
+              to="/farmer/digital-token"
+              className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition space-y-2 group"
+            >
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold group-hover:scale-110 transition">
+                <QrCode className="w-5 h-5" />
+              </div>
+              <h4 className="font-bold text-slate-900 text-sm">{t('btn_view_token')}</h4>
+              <p className="text-[11px] text-slate-500">Download digital gate pass with QR code verification.</p>
+            </Link>
+          )}
 
           <Link
             to="/farmer/weather"

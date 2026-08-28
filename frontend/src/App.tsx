@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { VoiceAssistant } from './components/VoiceAssistant';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
@@ -37,6 +38,26 @@ const AppLayout: React.FC = () => {
     return <Navigate to="/signin" replace />;
   }
 
+  // Role-based authorization guard
+  if (user && !isStandalone) {
+    const isFarmerRoute = location.pathname.startsWith('/farmer');
+    const isOfficerRoute = location.pathname.startsWith('/officer');
+    const isAdminRoute = location.pathname.startsWith('/admin');
+
+    if (isFarmerRoute && user.role !== 'FARMER') {
+      const defaultPath = user.role === 'OFFICER' ? '/officer' : '/admin';
+      return <Navigate to={defaultPath} replace />;
+    }
+    if (isOfficerRoute && user.role !== 'OFFICER') {
+      const defaultPath = user.role === 'FARMER' ? '/farmer' : '/admin';
+      return <Navigate to={defaultPath} replace />;
+    }
+    if (isAdminRoute && user.role !== 'ADMIN') {
+      const defaultPath = user.role === 'FARMER' ? '/farmer' : '/officer';
+      return <Navigate to={defaultPath} replace />;
+    }
+  }
+
   // Redirect logged-in users visiting root / to their dashboard
   if (user && location.pathname === '/') {
     if (user.role === 'FARMER') return <Navigate to="/farmer" replace />;
@@ -47,6 +68,7 @@ const AppLayout: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500 selection:text-white">
       {!isStandalone && <Navbar />}
+      {!isStandalone && <VoiceAssistant />}
 
       <main className={`flex-grow ${isStandalone ? '' : ''}`}>
         <Routes>

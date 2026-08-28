@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Wheat, Calendar, Clock, MapPin, Sparkles, CheckCircle2, ArrowRight,
@@ -18,6 +18,12 @@ interface SelectedCropItem {
   quantity: number;
 }
 
+const formatLocalDate = (dateObj: Date) => {
+  const offset = dateObj.getTimezoneOffset();
+  const localTime = new Date(dateObj.getTime() - (offset * 60 * 1000));
+  return localTime.toISOString().split('T')[0];
+};
+
 export const SlotBookingPage: React.FC = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -35,10 +41,122 @@ export const SlotBookingPage: React.FC = () => {
 
   // Location & Centre Choice
   const [selectedCentreId, setSelectedCentreId] = useState(1);
-  const [bookingDate, setBookingDate] = useState('2026-08-28');
+
+  // Dynamically calculate open dates starting from today or tomorrow (if past last slot time 3:00 PM)
+  const availableDates = useMemo(() => {
+    const dates = [];
+    const today = new Date();
+    const isPastLastSlot = today.getHours() >= 15; // 3:00 PM (15:00) is the last slot hour
+    const startDay = isPastLastSlot ? 1 : 0;
+    
+    for (let i = startDay; i < startDay + 4; i++) {
+      const d = new Date();
+      d.setDate(today.getDate() + i);
+      dates.push(formatLocalDate(d));
+    }
+    return dates;
+  }, []);
+
+  const [bookingDate, setBookingDate] = useState(availableDates[0]);
   const [selectedSlot, setSelectedSlot] = useState({ start: '10:30 AM', end: '11:00 AM' });
   const [createdBooking, setCreatedBooking] = useState<Booking | null>(null);
   const [showQR, setShowQR] = useState(false);
+
+  // Listen for voice-triggered auto-booking requests
+  useEffect(() => {
+    (window as any).triggerVoiceAutoBooking = (cropNameInput?: string, weightVal?: number, timePref?: string) => {
+      let cropId = 2; // Paddy
+      if (cropNameInput) {
+        const matchingCrop = localState.crops.find(c => 
+          c.name.toLowerCase().includes(cropNameInput.toLowerCase()) || 
+          c.variety.toLowerCase().includes(cropNameInput.toLowerCase())
+        );
+        if (matchingCrop) cropId = matchingCrop.id;
+      }
+      
+      const qty = weightVal || 20.0;
+      setSelectedCropItems([{ cropId, quantity: qty }]);
+      
+      // Auto select nearest centre
+      const recs = localState.getCentreRecommendations(
+        localState.userLocation || user?.farmer?.district || 'Guntur',
+        cropId
+      );
+      const chosenCentreId = recs && recs.length > 0 ? recs[0].centre.id : 1;
+      setSelectedCentreId(chosenCentreId);
+
+      // Tomorrow date
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = formatLocalDate(tomorrow);
+      setBookingDate(tomorrowStr);
+
+      // Map time slot based on user's morning/afternoon/evening preference
+      let slot = { start: '10:30 AM', end: '11:00 AM' };
+      if (timePref === 'afternoon') {
+        slot = { start: '02:00 PM', end: '02:30 PM' };
+      } else if (timePref === 'evening') {
+        slot = { start: '02:30 PM', end: '03:00 PM' };
+      } else if (timePref === 'morning') {
+        slot = { start: '09:30 AM', end: '10:00 AM' };
+      }
+      setSelectedSlot(slot);
+
+      // Save and finish
+      const newBooking = localState.createMultiCropBooking({
+        farmerId: user?.id || 1,
+        centreId: chosenCentreId,
+        items: [{ cropId, quantity: qty }],
+        bookingDate: tomorrowStr,
+        slotStart: slot.start,
+        slotEnd: slot.end
+      });
+
+      setCreatedBooking(newBooking);
+      setStep(6);
+      setShowQR(true);
+      return true;
+    };
+
+    return () => {
+      delete (window as any).triggerVoiceAutoBooking;
+    };
+  }, [user]);
+
+  // Check if a time slot has already passed based on local time
+  const isTimeSlotPassed = (slotStart: string, dateStr: string) => {
+    try {
+      const today = new Date();
+      const currentLocDate = formatLocalDate(today);
+      
+      if (dateStr > currentLocDate) return false;
+      if (dateStr < currentLocDate) return true;
+      
+      const [time, period] = slotStart.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+      
+      const slotTime = new Date();
+      slotTime.setHours(hours, minutes, 0, 0);
+      
+      return slotTime.getTime() <= today.getTime();
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Auto-correct selected time slot if it has passed
+  useEffect(() => {
+    const passed = isTimeSlotPassed(selectedSlot.start, bookingDate);
+    if (passed) {
+      const firstAvail = timeSlots.find(s => !isTimeSlotPassed(s.start, bookingDate) && s.status !== 'Full');
+      if (firstAvail) {
+        setSelectedSlot({ start: firstAvail.start, end: firstAvail.end });
+      }
+    }
+  }, [bookingDate]);
 
   // Filtered Crop Catalog
   const filteredCrops = localState.crops.filter(crop => {
@@ -479,7 +597,7 @@ export const SlotBookingPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {['2026-08-28', '2026-08-29', '2026-08-30', '2026-08-31'].map((d, idx) => (
+            {availableDates.map((d: string, idx: number) => (
               <button
                 key={d}
                 type="button"
@@ -542,7 +660,13 @@ export const SlotBookingPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {timeSlots.map((slot, idx) => {
               const isSelected = selectedSlot.start === slot.start;
-              const isFull = slot.status === 'Full';
+              const hasPassed = isTimeSlotPassed(slot.start, bookingDate);
+              const isFull = slot.status === 'Full' || hasPassed;
+              const statusText = hasPassed ? 'Passed' : slot.status;
+              const badgeColor = hasPassed 
+                ? 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse' 
+                : slot.color;
+
               return (
                 <button
                   key={idx}
@@ -558,8 +682,8 @@ export const SlotBookingPage: React.FC = () => {
                   }`}
                 >
                   <span className="font-black text-sm text-slate-900 block">{slot.start} – {slot.end}</span>
-                  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mt-2 ${slot.color}`}>
-                    {slot.status}
+                  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded border mt-2 ${badgeColor}`}>
+                    {statusText}
                   </span>
                 </button>
               );

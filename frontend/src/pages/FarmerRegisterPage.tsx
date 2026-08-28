@@ -7,6 +7,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { localState } from '../services/api';
+import { logLoginEvent } from '../services/authLogger';
+import { registerAccount } from '../services/accountService';
 import { UserRole } from '../types';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
@@ -138,7 +140,12 @@ const districts = [
   'Kurnool', 'East Godavari (Rajahmundry)', 'Eluru', 'Anantapur', 'SPSR Nellore',
   'YSR Kadapa', 'Chittoor / Tirupati', 'Prakasam (Ongole)', 'West Godavari (Bhimavaram)',
   'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar', 'Nalgonda', 'Mahabubnagar',
-  'Indore', 'Ludhiana', 'Karnal', 'Bellary', 'Thanjavur'
+  'Indore', 'Ludhiana', 'Karnal', 'Bellary', 'Thanjavur',
+  'Bareilly', 'Saharanpur', 'Varanasi', 'Sri Ganganagar', 'Kota',
+  'Rajkot', 'Mehsana', 'Nagpur', 'Latur', 'Nashik', 'Bardhaman',
+  'Malda', 'Murshidabad', 'Patna', 'Purnia', 'Bargarh', 'Raipur',
+  'Ranchi', 'Nagaon', 'Bathinda', 'Sirsa', 'Lakhimpur Kheri',
+  'Ujjain', 'Hanumangarh', 'Junagadh', 'Davanagere', 'Coimbatore', 'Palakkad'
 ];
 
 export const FarmerRegisterPage: React.FC = () => {
@@ -199,8 +206,11 @@ export const FarmerRegisterPage: React.FC = () => {
     mobile: '',
     stationCode: 'AP-GNT-01',
     designation: 'Mandi Supervisor',
-    password: ''
+    password: '',
+    govPasscode: ''
   });
+
+  const [officerError, setOfficerError] = useState<string | null>(null);
 
   // Admin Form State
   const [adminData, setAdminData] = useState({
@@ -299,6 +309,20 @@ export const FarmerRegisterPage: React.FC = () => {
         };
         localState.users.push(newUser);
       }
+
+      // Save to Supabase registered_accounts table
+      registerAccount({
+        name: formData.name,
+        mobile: formData.mobile,
+        role: 'FARMER',
+        farmer_id: formData.farmerId,
+        district: formData.district,
+        village: formData.village,
+        address: formData.address,
+        aadhaar_last4: aadhaar ? aadhaar.slice(-4) : undefined,
+      });
+
+      logLoginEvent({ mobile: formData.mobile, role: 'FARMER', event_type: 'REGISTER', status: 'SUCCESS' });
       login(formData.mobile, 'FARMER');
       navigate('/farmer');
     }
@@ -306,6 +330,21 @@ export const FarmerRegisterPage: React.FC = () => {
 
   const handleOfficerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setOfficerError(null);
+
+    // Validate Government Passcode
+    if (officerData.govPasscode !== '1234') {
+      setOfficerError('Invalid Government Passcode. Only authorized officers can create accounts.');
+      logLoginEvent({ 
+        mobile: officerData.mobile, 
+        role: 'OFFICER', 
+        event_type: 'REGISTER', 
+        status: 'FAILED', 
+        error_message: 'Invalid Government Passcode' 
+      });
+      return;
+    }
+
     const newUser = {
       id: localState.users.length + 1,
       name: officerData.name,
@@ -313,6 +352,15 @@ export const FarmerRegisterPage: React.FC = () => {
       role: 'OFFICER' as UserRole
     };
     localState.users.push(newUser);
+
+    // Save to Supabase registered_accounts table
+    registerAccount({
+      name: officerData.name,
+      mobile: officerData.mobile,
+      role: 'OFFICER',
+    });
+
+    logLoginEvent({ mobile: officerData.mobile, role: 'OFFICER', event_type: 'REGISTER', status: 'SUCCESS' });
     login(officerData.mobile, 'OFFICER');
     navigate('/officer');
   };
@@ -327,6 +375,16 @@ export const FarmerRegisterPage: React.FC = () => {
       role: 'ADMIN' as UserRole
     };
     localState.users.push(newUser);
+
+    // Save to Supabase registered_accounts table
+    registerAccount({
+      name: adminData.name,
+      mobile: '9876543212',
+      role: 'ADMIN',
+      email: adminData.email,
+    });
+
+    logLoginEvent({ mobile: '9876543212', email: adminData.email, role: 'ADMIN', event_type: 'REGISTER', status: 'SUCCESS' });
     login(adminData.email, 'ADMIN');
     navigate('/admin');
   };
@@ -699,6 +757,13 @@ export const FarmerRegisterPage: React.FC = () => {
         {/* 🏢 OFFICER REGISTRATION */}
         {activeTab === 'OFFICER' && (
           <form onSubmit={handleOfficerSubmit} className="space-y-4">
+            {officerError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3.5 rounded-xl text-xs flex items-center space-x-2 animate-fadeIn">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{officerError}</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700">{tr('lbl_fullname')}</label>
@@ -750,18 +815,34 @@ export const FarmerRegisterPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">{tr('lbl_password')}</label>
-              <div className="relative border-2 border-slate-200 rounded-xl focus-within:border-blue-500 transition-colors">
-                <input
-                  type="password"
-                  required
-                  value={officerData.password}
-                  onChange={e => setOfficerData({ ...officerData, password: e.target.value })}
-                  placeholder="Enter secure password"
-                  className="w-full px-4 py-2.5 text-xs text-slate-900 outline-none rounded-xl"
-                />
-                <Lock className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">{tr('lbl_password')}</label>
+                <div className="relative border-2 border-slate-200 rounded-xl focus-within:border-blue-500 transition-colors">
+                  <input
+                    type="password"
+                    required
+                    value={officerData.password}
+                    onChange={e => setOfficerData({ ...officerData, password: e.target.value })}
+                    placeholder="Enter secure password"
+                    className="w-full px-4 py-2.5 text-xs text-slate-900 outline-none rounded-xl"
+                  />
+                  <Lock className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Govt. Security Passcode</label>
+                <div className="relative border-2 border-slate-200 rounded-xl focus-within:border-blue-500 transition-colors">
+                  <input
+                    type="password"
+                    required
+                    value={officerData.govPasscode}
+                    onChange={e => setOfficerData({ ...officerData, govPasscode: e.target.value })}
+                    placeholder="Enter Govt-issued Passcode"
+                    className="w-full px-4 py-2.5 text-xs text-slate-900 outline-none rounded-xl"
+                  />
+                  <ShieldCheck className="absolute right-3.5 top-3 w-4 h-4 text-slate-400" />
+                </div>
               </div>
             </div>
 

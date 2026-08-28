@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { localState } from '../services/api';
 import { logLoginEvent } from '../services/authLogger';
+import { checkAccountExists, seedDefaultAccounts } from '../services/accountService';
 import { UserRole } from '../types';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
@@ -55,18 +56,40 @@ const allDistricts = [
   // Maharashtra
   { name: 'Nagpur', state: 'Maharashtra', lat: 21.1458, lon: 79.0882 },
   { name: 'Latur', state: 'Maharashtra', lat: 18.4088, lon: 76.5604 },
+  { name: 'Nashik', state: 'Maharashtra', lat: 19.9975, lon: 73.7898 },
   // West Bengal
   { name: 'Bardhaman', state: 'West Bengal', lat: 23.2324, lon: 87.8630 },
   { name: 'Malda', state: 'West Bengal', lat: 25.0108, lon: 88.1398 },
-  // Karnataka
-  { name: 'Davanagere', state: 'Karnataka', lat: 14.4644, lon: 75.9218 },
-  { name: 'Shimoga', state: 'Karnataka', lat: 13.9299, lon: 75.5681 },
-  // Tamil Nadu
-  { name: 'Madurai', state: 'Tamil Nadu', lat: 9.9252, lon: 78.1198 },
+  { name: 'Murshidabad', state: 'West Bengal', lat: 24.1800, lon: 88.2700 },
+  // Bihar
+  { name: 'Patna', state: 'Bihar', lat: 25.5941, lon: 85.1376 },
+  { name: 'Purnia', state: 'Bihar', lat: 25.7771, lon: 87.4753 },
   // Odisha
   { name: 'Bargarh', state: 'Odisha', lat: 21.3333, lon: 83.6167 },
   // Chhattisgarh
-  { name: 'Raipur', state: 'Chhattisgarh', lat: 21.2514, lon: 81.6296 }
+  { name: 'Raipur', state: 'Chhattisgarh', lat: 21.2514, lon: 81.6296 },
+  // Jharkhand
+  { name: 'Ranchi', state: 'Jharkhand', lat: 23.3441, lon: 85.3096 },
+  // Assam
+  { name: 'Nagaon', state: 'Assam', lat: 26.3484, lon: 92.6836 },
+  // Punjab
+  { name: 'Bathinda', state: 'Punjab', lat: 30.2110, lon: 74.9455 },
+  // Haryana
+  { name: 'Sirsa', state: 'Haryana', lat: 29.5310, lon: 75.0310 },
+  // Uttar Pradesh
+  { name: 'Lakhimpur Kheri', state: 'Uttar Pradesh', lat: 27.9500, lon: 80.7800 },
+  // Madhya Pradesh
+  { name: 'Ujjain', state: 'Madhya Pradesh', lat: 23.1760, lon: 75.7880 },
+  // Rajasthan
+  { name: 'Hanumangarh', state: 'Rajasthan', lat: 29.5800, lon: 74.3200 },
+  // Gujarat
+  { name: 'Junagadh', state: 'Gujarat', lat: 21.5200, lon: 70.4500 },
+  // Karnataka
+  { name: 'Davanagere', state: 'Karnataka', lat: 14.4644, lon: 75.9218 },
+  // Tamil Nadu
+  { name: 'Coimbatore', state: 'Tamil Nadu', lat: 11.0168, lon: 76.9558 },
+  // Kerala
+  { name: 'Palakkad', state: 'Kerala', lat: 10.7867, lon: 76.6547 },
 ];
 
 const loginDict: Record<string, any> = {
@@ -213,6 +236,11 @@ export const LoginPage: React.FC = () => {
     }
   }, [searchParams]);
 
+  // Seed default demo accounts to Supabase on mount
+  useEffect(() => {
+    seedDefaultAccounts();
+  }, []);
+
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -287,6 +315,15 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     setErrorMsg(null);
 
+    // Verify account exists in Supabase before sending OTP
+    const dbAccount = await checkAccountExists(mobile);
+    if (!dbAccount) {
+      setIsSubmitting(false);
+      setErrorMsg('This mobile number is not registered. Please create an account first.');
+      logLoginEvent({ mobile, role: 'FARMER', event_type: 'LOGIN', status: 'FAILED', error_message: 'Account not registered' });
+      return;
+    }
+
     const d = allDistricts.find(x => x.name === selectedDistrict);
     if (d) localState.setUserLocation({ latitude: d.lat, longitude: d.lon, district: d.name, state: d.state, isAutoDetected: false });
 
@@ -329,23 +366,33 @@ export const LoginPage: React.FC = () => {
     setIsSubmitting(true);
     setErrorMsg(null);
 
+    // Verify account exists in Supabase
+    const dbAccount = await checkAccountExists(mobile);
+    if (!dbAccount) {
+      setIsSubmitting(false);
+      setErrorMsg('This mobile number is not registered. Please create an account first.');
+      logLoginEvent({ mobile, role: 'FARMER', event_type: 'LOGIN', status: 'FAILED', error_message: 'Account not registered' });
+      return;
+    }
+
     let existing = localState.users.find(u => u.mobile === mobile);
     if (!existing) {
+      // Sync Supabase details to local state database
       const newUser = {
         id: localState.users.length + 1,
-        name: `Farmer (${mobile.slice(-4)})`,
-        mobile,
-        role: 'FARMER' as UserRole,
-        farmer: {
+        name: dbAccount.name,
+        mobile: dbAccount.mobile,
+        role: dbAccount.role,
+        farmer: dbAccount.role === 'FARMER' ? {
           id: localState.users.length + 1,
           user_id: localState.users.length + 1,
-          farmer_id: `AP-FARM-${Math.floor(1000 + Math.random() * 9000)}`,
-          name: `Farmer (${mobile.slice(-4)})`,
-          mobile,
-          address: villageName || selectedDistrict,
-          district: selectedDistrict,
-          village: villageName || selectedDistrict
-        }
+          farmer_id: dbAccount.farmer_id || `AP-FARM-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: dbAccount.name,
+          mobile: dbAccount.mobile,
+          address: dbAccount.address || dbAccount.village || dbAccount.district || 'Guntur',
+          district: dbAccount.district || 'Guntur',
+          village: dbAccount.village || 'Pedakakani'
+        } : undefined
       };
       localState.users.push(newUser);
     }
@@ -354,13 +401,44 @@ export const LoginPage: React.FC = () => {
     setTimeout(() => { setIsSubmitting(false); login(mobile, 'FARMER'); navigate('/farmer'); }, 600);
   };
 
-  const handleCredentialLogin = (e: React.FormEvent) => {
+  const handleCredentialLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMsg(null);
+
+    const loginMobile = mobile || (activeTab === 'OFFICER' ? '9876543211' : '9876543212');
+    
+    // Verify account exists in Supabase
+    const dbAccount = await checkAccountExists(loginMobile);
+    if (!dbAccount) {
+      setIsSubmitting(false);
+      setErrorMsg('These credentials are not registered in the system.');
+      return;
+    }
+
+    // Ensure matching role
+    if (dbAccount.role !== activeTab) {
+      setIsSubmitting(false);
+      setErrorMsg(`This account is registered as a ${dbAccount.role}, not an ${activeTab}.`);
+      return;
+    }
+
+    // Sync to local state if missing
+    let existing = localState.users.find(u => u.mobile === loginMobile);
+    if (!existing) {
+      const newUser = {
+        id: localState.users.length + 1,
+        name: dbAccount.name,
+        mobile: dbAccount.mobile,
+        role: dbAccount.role
+      };
+      localState.users.push(newUser);
+    }
+
     setTimeout(() => {
       setIsSubmitting(false);
-      if (activeTab === 'OFFICER') { login(mobile || '9876543211', 'OFFICER'); navigate('/officer'); }
-      else { login(mobile || '9876543212', 'ADMIN'); navigate('/admin'); }
+      if (activeTab === 'OFFICER') { login(loginMobile, 'OFFICER'); navigate('/officer'); }
+      else { login(loginMobile, 'ADMIN'); navigate('/admin'); }
     }, 600);
   };
 

@@ -21,18 +21,40 @@ export const FarmerProfilePage: React.FC = () => {
   const districts = [
     'Guntur', 'NTR District (Vijayawada)', 'Tenali', 'Bapatla', 'Palnadu (Narasaraopet)',
     'Kurnool', 'East Godavari (Rajahmundry)', 'Eluru', 'Anantapur', 'SPSR Nellore',
-    'YSR Kadapa', 'Chittoor / Tirupati', 'Prakasam (Ongole)', 'Warangal', 'Nizamabad', 'Khammam',
-    'Indore', 'Ludhiana', 'Karnal'
+    'YSR Kadapa', 'Chittoor / Tirupati', 'Prakasam (Ongole)', 'West Godavari (Bhimavaram)',
+    'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar', 'Nalgonda', 'Mahabubnagar',
+    'Indore', 'Ludhiana', 'Karnal', 'Bellary', 'Thanjavur',
+    'Bareilly', 'Saharanpur', 'Varanasi', 'Sri Ganganagar', 'Kota',
+    'Rajkot', 'Mehsana', 'Nagpur', 'Latur', 'Nashik', 'Bardhaman',
+    'Malda', 'Murshidabad', 'Patna', 'Purnia', 'Bargarh', 'Raipur',
+    'Ranchi', 'Nagaon', 'Bathinda', 'Sirsa', 'Lakhimpur Kheri',
+    'Ujjain', 'Hanumangarh', 'Junagadh', 'Davanagere', 'Coimbatore', 'Palakkad'
   ];
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (localState.users[0]?.farmer) {
-      localState.users[0].name = name;
-      localState.users[0].farmer.name = name;
-      localState.users[0].farmer.district = district.split(' ')[0];
-      localState.users[0].farmer.village = village;
-      localState.users[0].farmer.address = address;
+    if (!user) return;
+
+    const dbUser = localState.users.find(u => u.id === user.id);
+    if (dbUser) {
+      dbUser.name = name;
+      if (!dbUser.farmer) {
+        dbUser.farmer = {
+          id: dbUser.id,
+          user_id: dbUser.id,
+          farmer_id: `AP-FARM-${1000 + dbUser.id}`,
+          name: name,
+          mobile: dbUser.mobile,
+          address: address,
+          district: district,
+          village: village
+        };
+      } else {
+        dbUser.farmer.name = name;
+        dbUser.farmer.district = district;
+        dbUser.farmer.village = village;
+        dbUser.farmer.address = address;
+      }
       localState.notify();
     }
     setSaved(true);

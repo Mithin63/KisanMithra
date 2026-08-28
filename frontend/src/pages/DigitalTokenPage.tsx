@@ -10,11 +10,31 @@ export const DigitalTokenPage: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const activeBooking = localState.bookings[0];
+  const activeBooking = localState.bookings.find(b => b.farmer_id === user?.farmer?.id);
   const nowServingToken = localState.nowServingToken;
-  const tokenNum = activeBooking?.token_number || 127;
-  const farmersAhead = Math.max(0, tokenNum - nowServingToken);
+  const tokenNum = activeBooking?.token_number;
+  const farmersAhead = tokenNum ? Math.max(0, tokenNum - nowServingToken) : 0;
   const estimatedWait = Math.max(2, farmersAhead * 4);
+
+  if (!activeBooking || !tokenNum) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center space-y-6 animate-fadeIn">
+        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+          <QrCode className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900">No Active Digital Token</h2>
+        <p className="text-slate-500 text-sm max-w-md mx-auto">
+          You must book a procurement slot first to generate a digital gate pass with verification QR code.
+        </p>
+        <button
+          onClick={() => navigate('/farmer/book-slot')}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm px-8 py-3 rounded-2xl shadow transition"
+        >
+          Book a Slot Now
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10 space-y-8 animate-fadeIn">

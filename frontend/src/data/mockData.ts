@@ -168,7 +168,7 @@ export const initialBookings: Booking[] = [
   },
   {
     id: 2,
-    farmer_id: 2,
+    farmer_id: 202,
     centre_id: 1,
     crop_id: 2,
     quantity: 18.50,
@@ -189,7 +189,7 @@ export const initialBookings: Booking[] = [
   },
   {
     id: 3,
-    farmer_id: 3,
+    farmer_id: 203,
     centre_id: 1,
     crop_id: 4,
     quantity: 40.00,
@@ -210,7 +210,7 @@ export const initialBookings: Booking[] = [
   },
   {
     id: 4,
-    farmer_id: 4,
+    farmer_id: 204,
     centre_id: 1,
     crop_id: 23,
     quantity: 15.00,

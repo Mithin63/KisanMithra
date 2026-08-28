@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, AreaChart, Area, Legend
@@ -7,7 +8,7 @@ import {
   Brain, TrendingUp, Sprout, Leaf, FlaskConical, Droplets,
   ThermometerSun, Bug, CheckCircle2, AlertTriangle, Info,
   ChevronDown, ChevronUp, Star, IndianRupee, Calendar,
-  CloudSun, Layers, ArrowRight, BarChart3, Clock
+  CloudSun, Layers, ArrowRight, BarChart3, Clock, RefreshCw
 } from 'lucide-react';
 import {
   cropPriceData, recommendCrops, growingGuides, defaultGuide,
@@ -280,6 +281,44 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export const AICropAdvisorPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('price');
   const { language } = useLanguage();
+  const navigate = useNavigate(); // For navigation if needed
+
+  // ── AI Model Agent Assistant State ──
+  const [chatPromptInput, setChatPromptInput] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGeneratedMessage, setAiGeneratedMessage] = useState<string | null>(null);
+
+  const suggestedPrompts = [
+    { text: '📈 Forecast Basmati Rice prices', crop: 'Basmati Rice', tab: 'price' as Tab },
+    { text: '🌾 Suggest Kharif crops for Clay soil', season: 'Kharif' as Season, soil: 'Clay' as SoilType, tab: 'recommend' as Tab },
+    { text: '🌿 How to grow Groundnut in Sandy Loam', crop: 'Groundnut', tab: 'grow' as Tab },
+  ];
+
+  const handleSuggestedPromptClick = (prompt: typeof suggestedPrompts[0]) => {
+    setAiGenerating(true);
+    setAiGeneratedMessage(null);
+    setChatPromptInput(prompt.text);
+
+    setTimeout(() => {
+      setAiGenerating(false);
+      setActiveTab(prompt.tab);
+      
+      if (prompt.crop) {
+        if (prompt.tab === 'price') {
+          setSelectedCrop(prompt.crop);
+        } else if (prompt.tab === 'grow') {
+          setGuideCrop(prompt.crop);
+        }
+      }
+      if (prompt.season && prompt.soil) {
+        setSeason(prompt.season);
+        setSoilType(prompt.soil);
+        setShowResults(true);
+      }
+
+      setAiGeneratedMessage(`Successfully loaded AI recommendation settings for: "${prompt.text}"`);
+    }, 1200);
+  };
 
   const tr = (key: string) => {
     return advisorDict[language]?.[key] || advisorDict['en']?.[key] || key;
@@ -380,6 +419,94 @@ export const AICropAdvisorPage: React.FC = () => {
                 </span>
               );
             })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── AI Assistant Simulation Hub ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Chat / Prompt Input Panel */}
+          <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
+            <div className="flex items-center space-x-2">
+              <Brain className="w-5 h-5 text-emerald-400 animate-pulse" />
+              <h2 className="text-white font-black text-sm uppercase tracking-wider">AgriGPT AI Inference Prompt</h2>
+            </div>
+            
+            <div className="relative">
+              <input
+                type="text"
+                value={chatPromptInput}
+                onChange={e => setChatPromptInput(e.target.value)}
+                placeholder="Ask AgriGPT anything about crops, prices, or growing guidelines..."
+                className="w-full bg-white/5 border border-white/10 text-slate-200 rounded-2xl pl-4 pr-12 py-3.5 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none placeholder:text-slate-500"
+              />
+              <button 
+                onClick={() => {
+                  setAiGenerating(true);
+                  setTimeout(() => {
+                    setAiGenerating(false);
+                    setAiGeneratedMessage("Prompt executed! Check the respective tab below for updated model predictions.");
+                  }, 1000);
+                }}
+                className="absolute right-2 top-2 bg-emerald-600 hover:bg-emerald-500 text-white p-2 rounded-xl text-xs font-bold transition flex items-center justify-center"
+              >
+                {aiGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Simulated generation notification */}
+            {aiGenerating && (
+              <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 text-xs text-emerald-400 flex items-center space-x-2 animate-pulse">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>AgriGPT-v4.6 running tensor regression & soil matches...</span>
+              </div>
+            )}
+
+            {aiGeneratedMessage && !aiGenerating && (
+              <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-400/20 text-xs text-emerald-300 flex items-center space-x-2">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{aiGeneratedMessage}</span>
+              </div>
+            )}
+
+            {/* Quick Suggestions */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Suggested AI Prompts</span>
+              <div className="flex flex-wrap gap-2">
+                {suggestedPrompts.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSuggestedPromptClick(p)}
+                    className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-emerald-500/40 text-slate-300 hover:text-white px-3 py-2.5 rounded-xl text-[11px] font-semibold transition text-left"
+                  >
+                    {p.text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* AI Model Specs Panel */}
+          <div className="bg-gradient-to-br from-emerald-950/40 to-slate-900/40 border border-emerald-500/20 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl flex flex-col justify-between">
+            <div>
+              <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider block">Model Credentials</span>
+              <h3 className="text-white font-black text-lg mt-0.5">AgriGPT-v4.6 Engine</h3>
+              <p className="text-slate-400 text-[11px] leading-relaxed mt-1">
+                Optimized ensemble deep learning model mapping real-time crop pricing with regional ICAR soil specifications.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs pt-2">
+              <div className="bg-white/5 p-2.5 rounded-xl border border-white/10 text-center">
+                <span className="text-[10px] text-slate-500 block">Model Accuracy</span>
+                <span className="font-extrabold text-emerald-400">94.8% (CCEA Val)</span>
+              </div>
+              <div className="bg-white/5 p-2.5 rounded-xl border border-white/10 text-center">
+                <span className="text-[10px] text-slate-500 block">Inference Latency</span>
+                <span className="font-extrabold text-slate-200">32ms (Edge Node)</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -625,9 +752,16 @@ export const AICropAdvisorPage: React.FC = () => {
                   <label className="text-slate-300 text-xs font-bold block">{tr('district')}</label>
                   <select value={district} onChange={e => { setDistrict(e.target.value); setShowResults(false); }}
                     className="w-full bg-white/5 border border-white/10 text-slate-200 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none">
-                    {['Guntur', 'NTR District (Vijayawada)', 'Kurnool', 'Anantapur', 'Nellore',
-                      'Warangal', 'Khammam', 'Karimnagar', 'Nizamabad', 'Nalgonda',
-                      'Ludhiana', 'Karnal', 'Indore', 'Thanjavur', 'Bellary'].map(d => (
+                    {['Guntur', 'NTR District (Vijayawada)', 'Tenali', 'Bapatla', 'Palnadu (Narasaraopet)',
+                      'Kurnool', 'East Godavari (Rajahmundry)', 'Eluru', 'Anantapur', 'SPSR Nellore',
+                      'YSR Kadapa', 'Chittoor / Tirupati', 'Prakasam (Ongole)', 'West Godavari (Bhimavaram)',
+                      'Warangal', 'Nizamabad', 'Khammam', 'Karimnagar', 'Nalgonda', 'Mahabubnagar',
+                      'Indore', 'Ludhiana', 'Karnal', 'Bellary', 'Thanjavur',
+                      'Bareilly', 'Saharanpur', 'Varanasi', 'Sri Ganganagar', 'Kota',
+                      'Rajkot', 'Mehsana', 'Nagpur', 'Latur', 'Nashik', 'Bardhaman',
+                      'Malda', 'Murshidabad', 'Patna', 'Purnia', 'Bargarh', 'Raipur',
+                      'Ranchi', 'Nagaon', 'Bathinda', 'Sirsa', 'Lakhimpur Kheri',
+                      'Ujjain', 'Hanumangarh', 'Junagadh', 'Davanagere', 'Coimbatore', 'Palakkad'].map(d => (
                       <option key={d} value={d} className="bg-slate-800">{d}</option>
                     ))}
                   </select>

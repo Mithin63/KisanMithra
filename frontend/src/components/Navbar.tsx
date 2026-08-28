@@ -41,18 +41,25 @@ export const Navbar: React.FC = () => {
 
   interface NavItem { label: string; path: string; icon: any; badge?: number; shortLabel?: string; }
 
+  const hasActiveBooking = user ? localState.bookings.some(b => b.farmer_id === user.farmer?.id) : false;
+
   const farmerNav: NavItem[] = [
     { label: t('nav_dashboard'),      shortLabel: 'Home',      path: '/farmer',              icon: Home },
     { label: t('nav_book_slot'),       shortLabel: 'Book',      path: '/farmer/book-slot',    icon: Calendar },
     { label: t('nav_weather'),         shortLabel: 'Weather',   path: '/farmer/weather',      icon: CloudSun },
     { label: t('nav_guidelines'),      shortLabel: 'Checklist', path: '/farmer/guidelines',   icon: ClipboardCheck },
-    { label: t('nav_my_queue'),        shortLabel: 'Queue',     path: '/farmer/my-queue',     icon: Clock },
-    { label: t('nav_procurement'),     shortLabel: 'Track',     path: '/farmer/procurement',  icon: CheckSquare },
-    { label: t('nav_payments'),        shortLabel: 'Pay',       path: '/farmer/payments',     icon: CreditCard },
+    ...(hasActiveBooking ? [
+      { label: t('nav_my_queue'),        shortLabel: 'Queue',     path: '/farmer/my-queue',     icon: Clock },
+      { label: t('nav_procurement'),     shortLabel: 'Track',     path: '/farmer/procurement',  icon: CheckSquare },
+      { label: t('nav_payments'),        shortLabel: 'Pay',       path: '/farmer/payments',     icon: CreditCard },
+    ] : []),
     { label: t('nav_notifications'),   shortLabel: 'Alerts',    path: '/farmer/notifications', icon: Bell, badge: unreadCount },
     { label: t('nav_profile'),         shortLabel: 'Profile',   path: '/farmer/profile',      icon: User },
     { label: 'AI Crop Advisor',        shortLabel: 'AI',        path: '/farmer/ai-advisor',   icon: Brain },
   ];
+
+  // Desktop nav shows only first 8 items to leave room for profile chip + logout
+  const farmerDesktopNav = farmerNav.slice(0, 8);
 
   const officerNav: NavItem[] = [
     { label: 'Dashboard', shortLabel: 'Home',    path: '/officer',             icon: Building2 },
@@ -71,6 +78,7 @@ export const Navbar: React.FC = () => {
   ];
 
   const navItems = role === 'FARMER' ? farmerNav : role === 'OFFICER' ? officerNav : adminNav;
+  const desktopNavItems = role === 'FARMER' ? farmerDesktopNav : navItems;
 
   // Bottom nav shows only first 5 most important items on mobile
   const bottomNavItems = navItems.slice(0, 5);
@@ -111,8 +119,8 @@ export const Navbar: React.FC = () => {
             </Link>
 
             {/* ── Desktop Nav (lg+) ── */}
-            <nav className="hidden lg:flex items-center space-x-0.5 xl:space-x-1">
-              {navItems.map(item => {
+            <nav className="hidden lg:flex items-center space-x-0.5 xl:space-x-1 min-w-0 overflow-x-auto">
+              {desktopNavItems.map(item => {
                 const Icon = item.icon;
                 const active = isActive(item.path);
                 return (
@@ -138,7 +146,7 @@ export const Navbar: React.FC = () => {
             </nav>
 
             {/* ── Right Controls ── */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               {/* Language switcher — tablet+ */}
               <div className="hidden md:block">
                 <LanguageSwitcher />
@@ -156,23 +164,28 @@ export const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* User profile chip — when logged in */}
+              {/* User profile chip & logout — always visible when logged in */}
               {user && (
-                <div className="hidden md:flex items-center space-x-2 border-l border-slate-200 pl-2 sm:pl-3">
-                  <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${roleBg} text-white flex items-center justify-center font-black text-xs flex-shrink-0`}>
-                    {user.name.charAt(0)}
-                  </div>
-                  <div className="hidden lg:block text-right">
-                    <div className="text-xs font-bold text-slate-900 leading-none">{user.name}</div>
-                    <div className="text-[10px] text-emerald-700 font-semibold uppercase mt-0.5">{role}</div>
-                  </div>
+                <div className="flex items-center space-x-1.5 sm:space-x-2 border-l border-slate-200 pl-2 sm:pl-3">
+                  <Link 
+                    to={role === 'FARMER' ? '/farmer/profile' : '#'} 
+                    className="flex items-center space-x-2 hover:opacity-85 transition group"
+                  >
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${roleBg} text-white flex items-center justify-center font-black text-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                      {user.name.charAt(0)}
+                    </div>
+                    <div className="hidden xl:block text-right">
+                      <div className="text-xs font-bold text-slate-900 leading-none group-hover:text-emerald-700 group-hover:underline">{user.name}</div>
+                      <div className="text-[10px] text-emerald-700 font-semibold uppercase mt-0.5">{role}</div>
+                    </div>
+                  </Link>
                   <button
                     onClick={() => { logout(); navigate('/'); }}
-                    className="flex items-center space-x-1 text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-xl border border-red-200 text-[10px] font-bold transition ml-2"
+                    className="flex items-center space-x-1 text-red-600 hover:bg-red-50 px-2 sm:px-2.5 py-1.5 rounded-xl border border-red-200 text-[10px] font-bold transition"
                     title="Logout"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>Logout</span>
+                    <span className="hidden sm:inline">Logout</span>
                   </button>
                 </div>
               )}
