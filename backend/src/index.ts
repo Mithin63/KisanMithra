@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import apiRouter from './routes';
 
 dotenv.config();
@@ -29,6 +30,18 @@ app.get('/api/health', (req, res) => {
 
 // Register API Routes
 app.use('/api', apiRouter);
+
+// Serve frontend static assets in production
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+// Fallback for React Router (Single Page Application routing)
+app.get('*', (req, res, next) => {
+  if (req.originalUrl.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
 
 // Start Server
 app.listen(PORT, () => {

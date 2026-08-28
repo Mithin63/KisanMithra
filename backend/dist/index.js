@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
 const routes_1 = __importDefault(require("./routes"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
@@ -28,6 +29,16 @@ app.get('/api/health', (req, res) => {
 });
 // Register API Routes
 app.use('/api', routes_1.default);
+// Serve frontend static assets in production
+const frontendDistPath = path_1.default.join(__dirname, '../../frontend/dist');
+app.use(express_1.default.static(frontendDistPath));
+// Fallback for React Router (Single Page Application routing)
+app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api')) {
+        return next();
+    }
+    res.sendFile(path_1.default.join(frontendDistPath, 'index.html'));
+});
 // Start Server
 app.listen(PORT, () => {
     console.log(`=================================================================`);
