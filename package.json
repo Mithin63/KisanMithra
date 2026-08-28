@@ -2,7 +2,7 @@
   "name": "smartprocure-monorepo",
   "version": "1.0.0",
   "scripts": {
-    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "install-all": "npm install --production=false --prefix backend && npm install --production=false --prefix frontend",
     "build": "npm run build --prefix frontend && npm run build --prefix backend",
     "start": "node backend/dist/index.js"
   },
